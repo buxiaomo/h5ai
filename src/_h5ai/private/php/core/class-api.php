@@ -13,7 +13,7 @@ class Api {
 
     public function apply() {
         $action = $this->request->query('action');
-        $supported = ['download', 'get', 'login', 'logout'];
+        $supported = ['download', 'get', 'login', 'logout', 'login_directory'];
         Util::json_fail(Util::ERR_UNSUPPORTED, 'unsupported action', !in_array($action, $supported));
 
         $methodname = 'on_' . $action;
@@ -62,6 +62,12 @@ class Api {
 
         if ($this->request->query('items', false)) {
             $href = $this->request->query('items.href');
+            
+            // Check authentication
+            if (!$this->context->check_auth($href)) {
+                Util::json_exit(['code' => 'ERR_AUTH_REQUIRED', 'msg' => 'Authentication required']);
+            }
+
             $what = $this->request->query_numeric('items.what');
             $response['items'] = $this->context->get_items($href, $what);
         }
@@ -106,5 +112,11 @@ class Api {
 
     private function on_logout() {
         Util::json_exit(['asAdmin' => $this->context->logout_admin()]);
+    }
+
+    private function on_login_directory() {
+        $href = $this->request->query('href');
+        $pass = $this->request->query('pass');
+        Util::json_exit(['success' => $this->context->login_directory($href, $pass)]);
     }
 }

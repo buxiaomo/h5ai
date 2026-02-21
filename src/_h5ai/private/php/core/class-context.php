@@ -301,4 +301,58 @@ class Context {
 
         return $html;
     }
+
+    public function check_auth($href) {
+        if (!$this->query_option('security.enabled', false)) {
+            return true;
+        }
+
+        $dirs = $this->query_option('security.dirs', []);
+        $auth_dirs = $this->session->get('auth_dirs', []);
+
+        if (!is_array($dirs)) {
+            return true;
+        }
+
+        $root_href = $this->setup->get('ROOT_HREF');
+
+        foreach ($dirs as $pattern) {
+            $pat = Util::normalize_path($root_href . '/' . $pattern, true);
+            $check = Util::normalize_path(rawurldecode($href), true);
+
+            if (strpos($check, $pat) === 0) {
+                if (!isset($auth_dirs[$pat]) || $auth_dirs[$pat] !== true) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public function login_directory($href, $pass) {
+        $dirs = $this->query_option('security.dirs', []);
+        $passhash = $this->query_option('security.passhash', '');
+
+        if (!is_array($dirs)) {
+            return false;
+        }
+
+        $root_href = $this->setup->get('ROOT_HREF');
+        $success = false;
+
+        foreach ($dirs as $pattern) {
+             $pat = Util::normalize_path($root_href . '/' . $pattern, true);
+             $check = Util::normalize_path(rawurldecode($href), true);
+
+             if (strpos($check, $pat) === 0) {
+                 if (strcasecmp(hash('sha512', $pass), $passhash) === 0) {
+                     $auth_dirs = $this->session->get('auth_dirs', []);
+                     $auth_dirs[$pat] = true;
+                     $this->session->set('auth_dirs', $auth_dirs);
+                     $success = true;
+                 }
+             }
+        }
+        return $success;
+    }
 }

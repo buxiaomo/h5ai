@@ -40,13 +40,19 @@ class Util {
         return $value;
     }
 
-    public static function starts_with($sequence, $head) {
-        return substr($sequence, 0, strlen($head)) === $head;
+    public static function starts_with($haystack, $needle)
+    {
+        return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== false;
     }
 
-    public static function ends_with($sequence, $tail) {
-        $len = strlen($tail);
-        return $len === 0 ? true : substr($sequence, -$len) === $tail;
+    public static function ends_with($haystack, $needle)
+    {
+        $length = strlen($needle);
+        if ($length == 0) {
+            return true;
+        }
+
+        return (substr($haystack, -$length) === $needle);
     }
 
     public static function wrap_pattern($pattern) {

@@ -76,6 +76,12 @@ const getItem = () => require('../model/item').get(absHref);
 
 const load = () => {
     return request({action: 'get', items: {href: absHref, what: 1}}).then(json => {
+        if (json && json.code === 'ERR_AUTH_REQUIRED') {
+            event.pub('location.authRequired', absHref);
+            // 返回一个空的 promise 或者 null，避免后续逻辑报错
+            return Promise.resolve(null);
+        }
+
         const Item = require('../model/item');
         const item = Item.get(absHref);
 
@@ -131,17 +137,16 @@ const setLocation = (newAbsHref, keepBrowserUrl) => {
     }
 
     const item = getItem();
-    if (item.isLoaded) {
-        event.pub('location.changed', item);
-        refresh();
-    } else {
-        notification.set('loading...');
-        load().then(() => {
+    notification.set('loading...');
+    
+    // 强制调用 load，即使 item 已经 loaded，也要检查权限
+    load().then(loadedItem => {
+        notification.set();
+        if (loadedItem) {
             item.isLoaded = true;
-            notification.set();
             event.pub('location.changed', item);
-        });
-    }
+        }
+    });
 };
 
 const setLink = ($el, item) => {

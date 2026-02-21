@@ -112,6 +112,12 @@ class Setup {
         $this->set('PRIVATE_PATH', Util::normalize_path($this->get('H5AI_PATH') . '/private', false));
         $this->set('CONF_PATH', Util::normalize_path($this->get('PRIVATE_PATH') . '/conf', false));
         $this->set('CACHE_PRV_PATH', Util::normalize_path($this->get('PRIVATE_PATH') . '/cache', false));
+        
+        // Ensure cache directory exists and is writable
+        if (!is_dir($this->get('CACHE_PRV_PATH'))) {
+            @mkdir($this->get('CACHE_PRV_PATH'), 0755, true);
+        }
+        
         $this->set('HAS_WRITABLE_CACHE_PRV', @is_writable($this->get('CACHE_PRV_PATH')));
     }
 
@@ -119,7 +125,8 @@ class Setup {
         $cmds_cache_path = Util::normalize_path($this->get('CACHE_PRV_PATH') . '/cmds.json', false);
 
         $cmds = Json::load($cmds_cache_path);
-        if (sizeof($cmds) === 0 || $this->refresh) {
+        if ($cmds === null || sizeof($cmds) === 0 || $this->refresh) {
+            $cmds = []; // Initialize as array
             $cmds['command'] = Util::exec_0('command -v command');
             $cmds['which'] = Util::exec_0('which which') || Util::exec_0('which which.exe');
             $cmds['where'] = Util::exec_0('where where.exe');

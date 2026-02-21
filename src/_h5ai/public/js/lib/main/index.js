@@ -1,5 +1,6 @@
 require('../view/viewmode');
 
+require('../ext/auth');
 require('../ext/autorefresh');
 require('../ext/contextmenu');
 require('../ext/crumb');
