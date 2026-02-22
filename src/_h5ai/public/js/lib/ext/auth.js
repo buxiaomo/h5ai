@@ -5,6 +5,7 @@ const location = require('../core/location');
 
 const loginTpl =
         `<div id="login-wrapper">
+            <div id="login-close">×</div>
             <input id="pass" type="password" placeholder="password"/>
             <span id="login">login</span>
             <div id="hint">
@@ -16,6 +17,7 @@ const init = () => {
     const $login = dom(loginTpl).hide().appTo('body');
     const $pass = $login.find('#pass');
     const $submit = $login.find('#login');
+    const $close = $login.find('#login-close');
     let currentHref = null;
 
     const login = () => {
@@ -38,6 +40,39 @@ const init = () => {
         });
     };
 
+    const getParentHref = href => {
+        if (!href) {
+            return href;
+        }
+
+        let h = href;
+        if (h.length > 1 && h.endsWith('/')) {
+            h = h.slice(0, -1);
+        }
+
+        const parts = h.split('/');
+        if (parts.length <= 2) {
+            return '/';
+        }
+
+        const parent = parts.slice(0, -1).join('/');
+        return parent === '' ? '/' : parent + '/';
+    };
+
+    const hide = () => {
+        const href = currentHref;
+        $pass.val('');
+        currentHref = null;
+        $login.hide();
+
+        if (href) {
+            const parentHref = getParentHref(href);
+            if (parentHref && parentHref !== href) {
+                location.setLocation(parentHref);
+            }
+        }
+    };
+
     $pass.on('keydown', ev => {
         if (ev.which === 13) {
             login();
@@ -45,6 +80,14 @@ const init = () => {
     });
 
     $submit.on('click', login);
+
+    $close.on('click', hide);
+
+    dom(global.document).on('keydown', ev => {
+        if (ev.which === 27) {
+            hide();
+        }
+    });
 
     event.sub('location.authRequired', href => {
         currentHref = href;

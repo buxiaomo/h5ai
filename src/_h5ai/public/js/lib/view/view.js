@@ -18,6 +18,8 @@ const settings = Object.assign({
     setParentFolderLabels: false,
     sizes
 }, allsettings.view);
+const protectedDirs = allsettings.security && allsettings.security.dirs ? allsettings.security.dirs : [];
+const rootHref = allsettings.rootHref || '/';
 const sortedSizes = settings.sizes.sort((a, b) => a - b);
 const checkedModes = intersection(settings.modes, modes);
 const storekey = 'view';
@@ -49,6 +51,45 @@ const $hint = $view.find('#view-hint');
 
 
 const cropSize = (size, min, max) => Math.min(max, Math.max(min, size));
+
+const normalizeHref = href => {
+    if (!href) {
+        return href;
+    }
+
+    let h = href;
+
+    if (!h.endsWith('/')) {
+        h += '/';
+    }
+
+    if (!h.startsWith(rootHref)) {
+        if (h.startsWith('/')) {
+            h = rootHref + h.slice(1);
+        } else {
+            h = rootHref + h;
+        }
+    }
+
+    return h;
+};
+
+const isProtectedFolder = item => {
+    if (!item || !item.isFolder || !item.isFolder()) {
+        return false;
+    }
+
+    const href = normalizeHref(item.absHref);
+
+    for (let i = 0; i < protectedDirs.length; i += 1) {
+        const pat = normalizeHref(protectedDirs[i]);
+        if (href.indexOf(pat) === 0) {
+            return true;
+        }
+    }
+
+    return false;
+};
 
 const createStyles = size => {
     const dsize = cropSize(size, 20, 80);
@@ -151,6 +192,10 @@ const createHtml = item => {
     $date.attr('data-time', item.time).text(format.formatDate(item.time));
     $size.attr('data-bytes', item.size).text(format.formatSize(item.size));
     item.icon = resource.icon(item.type);
+
+    if (item.isFolder() && isProtectedFolder(item)) {
+        item.icon = resource.icon('safe');
+    }
 
     if (item.isFolder() && !item.isManaged) {
         $html.addCls('page');
